@@ -3,6 +3,9 @@
     "description": "eZ Platform UI Bundle",
     "license": "GPL-2.0",
     "type": "ezplatform-bundle",
+    "repositories": [
+        { "type": "vcs", "url": "https://github.com/StephaneDiot/PlatformUI-POC" }
+    ],
     "autoload": {
         "psr-4": {
             "EzSystems\\PlatformUIBundle\\": ""

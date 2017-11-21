@@ -1,6 +1,6 @@
 {
   "name": "PlatformUIBundle",
-  "repository": "https://github.com/ezsystems/PlatformUIBundle",
+  "repository": "https://github.com/StephaneDiot/PlatformUI-POC",
   "description": "eZ Platform UI Bundle",
   "version": "1.0.0",
   "devDependencies": {
