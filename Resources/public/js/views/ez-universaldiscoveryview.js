@@ -149,7 +149,7 @@ YUI.add('ez-universaldiscoveryview', function (Y) {
                 return false;
             }
             return !!Y.Array.find(this.get('selection'), function (struct) {
-                return struct.contentInfo.get('id') === contentStruct.contentInfo.get('id');
+                return ((struct.contentInfo.get('id') === contentStruct.contentInfo.get('id')) && (struct.location.get('id') === contentStruct.location.get('id')));
             });
         },
 
