@@ -63,7 +63,7 @@ YUI.add('ez-contenteditview', function (Y) {
                 this.get('formView').set('version', this.get('version'));
             });
 
-            this.on(['*:saveAction', '*:publishAction'], this._handleSavePublish);
+            this.on(['*:saveAction', '*:publishAction', '*:locateAction'], this._handleSavePublish);
             this.on('*:previewAction', this._saveAndPreview);
         },
 

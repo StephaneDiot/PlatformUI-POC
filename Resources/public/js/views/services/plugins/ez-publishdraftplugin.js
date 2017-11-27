@@ -23,6 +23,7 @@ YUI.add('ez-publishdraftplugin', function (Y) {
     Y.eZ.Plugin.PublishDraft = Y.Base.create('publishDraftPlugin', Y.eZ.Plugin.ViewServiceBase, [Y.eZ.DraftServerSideValidation], {
         initializer: function () {
             this.onHostEvent('*:publishAction', this._publishDraft);
+            this.onHostEvent('*:locateAction', this._publishDraft);
         },
 
         /**
@@ -45,7 +46,7 @@ YUI.add('ez-publishdraftplugin', function (Y) {
             this.set('buttonActionView', buttonActionView);
             this.set('fields', e.fields);
 
-            if (e.selectLocationFlag) {
+            if (e.selectLocationFlag || e.target.get('actionId') == 'locate') {
                 this.set('createLocation', true);
             }
             if ( !e.formIsValid ) {
@@ -165,7 +166,7 @@ YUI.add('ez-publishdraftplugin', function (Y) {
 
             service.fire('contentDiscover', {
                 config: {
-                    title: 'ola !',
+                    title: 'Select locations for your content',
                     contentDiscoveredHandler: Y.bind(this._storeSelection, this),
                     multiple: true,
                     isSelectable: function (contentStruct) {

@@ -81,6 +81,12 @@ YUI.add('ez-editactionbarview', function (Y) {
                                 label: Y.eZ.trans('discard.changes', {}, 'contentedit'),
                                 priority: 180
                             }),
+                            new Y.eZ.ButtonActionView({
+                                actionId: "locate",
+                                disabled: false,
+                                label: 'Publish and locate',
+                                priority: 186,
+                            }),
                         ];
 
                     if ( !this.get('contentType').hasFieldType('ezuser') ) {
