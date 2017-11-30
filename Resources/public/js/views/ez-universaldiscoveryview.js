@@ -267,7 +267,7 @@ YUI.add('ez-universaldiscoveryview', function (Y) {
             this.get('container')
                 .one('.ez-universaldiscovery-confirm').setContent(this.get('confirmLabel'));
         },
-        
+
         /**
          * Updates the method views depending on the value so that their
          * `visible` flag is consistent with the `visibleMethod` attribute value

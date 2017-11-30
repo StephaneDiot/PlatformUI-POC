@@ -24,6 +24,7 @@ YUI.add('ez-publishdraftplugin', function (Y) {
         initializer: function () {
             this.onHostEvent('*:publishAction', this._publishDraft);
             this.onHostEvent('*:locateAction', this._publishDraft);
+            this.onHostEvent('*:autolocateAction', this._publishDraft);
         },
 
         /**
@@ -48,51 +49,55 @@ YUI.add('ez-publishdraftplugin', function (Y) {
 
             if (e.selectLocationFlag || e.target.get('actionId') == 'locate') {
                 this.set('createLocation', true);
-            }
-            if ( !e.formIsValid ) {
-                return;
-            }
-            if (content.isNew()) {
-                notificationIdentifier = this._buildNotificationIdentifier(false);
-            } else {
-                notificationIdentifier = this._buildNotificationIdentifier(content.get('id'));
+
             }
 
-            /**
-             * Stores a custom _serverSideErrorCallback sent in the `publishAction` event parameters.
-             *
-             * @property _serverSideErrorCallback
-             * @protected
-             * @type {Function}
-             */
-            this._serverSideErrorCallback = e.serverSideErrorCallback;
-
-            service.fire('notify', {
-                notification: {
-                    identifier: notificationIdentifier,
-                    text: Y.eZ.trans('publishing.content', {}, 'contentedit'),
-                    state: 'started',
-                    timeout: 5,
-                },
-            });
-
-            if (this.get('createLocation')) {
-                this.set('createLocation', false);
-                this._createLocationSelect();
-            } else {
-                app.set('loading', true);
-                buttonActionView.set("disabled", true);
-
-                app.onceAfter('loadingChange', function () {
-                    buttonActionView.set("disabled", false);
-                });
-                if ( content.isNew() ) {
-                    this._set('isNewContent', true);
-                    this._createPublishContent(e.fields);
-                } else {
-                    this._savePublishVersion(e.fields);
+                if ( !e.formIsValid ) {
+                    return;
                 }
-            }
+                if (content.isNew()) {
+                    notificationIdentifier = this._buildNotificationIdentifier(false);
+                } else {
+                    notificationIdentifier = this._buildNotificationIdentifier(content.get('id'));
+                }
+
+                /**
+                 * Stores a custom _serverSideErrorCallback sent in the `publishAction` event parameters.
+                 *
+                 * @property _serverSideErrorCallback
+                 * @protected
+                 * @type {Function}
+                 */
+                this._serverSideErrorCallback = e.serverSideErrorCallback;
+
+                service.fire('notify', {
+                    notification: {
+                        identifier: notificationIdentifier,
+                        text: Y.eZ.trans('publishing.content', {}, 'contentedit'),
+                        state: 'started',
+                        timeout: 5,
+                    },
+                });
+
+                if(this.get('createLocation')) {
+                    this.set('createLocation', false);
+                    this._createLocationSelect();
+                } else if (e.autoLocateFlag || e.target.get('actionId') == 'autolocate') {
+                    this._findAutoLocation();
+                } else {
+                    app.set('loading', true);
+                    buttonActionView.set("disabled", true);
+
+                    app.onceAfter('loadingChange', function () {
+                        buttonActionView.set("disabled", false);
+                    });
+                    if ( content.isNew() ) {
+                        this._set('isNewContent', true);
+                        this._createPublishContent(e.fields);
+                    } else {
+                        this._savePublishVersion(e.fields);
+                    }
+                }
         },
         /**
          * Fire 'notify' event
@@ -113,6 +118,67 @@ YUI.add('ez-publishdraftplugin', function (Y) {
                     timeout: timeout,
                 }
             });
+        },
+        _publishDraftInLocation: function (e, event) {
+            var service = this.get('host'),
+                content = service.get('content'),
+                notificationIdentifier,
+                app = service.get('app'),
+                buttonActionView = e.target,
+                capi = service.get('capi'),
+                version = service.get('version'),
+                content = service.get('content'),
+                options = {api: capi};
+
+            if ( !e.formIsValid ) {
+                return;
+            }
+
+                notificationIdentifier = this._buildNotificationIdentifier(false);
+
+
+            /**
+             * Stores a custom _serverSideErrorCallback sent in the `publishAction` event parameters.
+             *
+             * @property _serverSideErrorCallback
+             * @protected
+             * @type {Function}
+             */
+            this._serverSideErrorCallback = e.serverSideErrorCallback;
+
+            service.fire('notify', {
+                notification: {
+                    identifier: notificationIdentifier,
+                    text: Y.eZ.trans('publishing.content', {}, 'contentedit'),
+                    state: 'started',
+                    timeout: 5,
+                },
+            });
+
+            app.set('loading', true);
+            buttonActionView.set("disabled", true);
+
+            app.onceAfter('loadingChange', function () {
+                buttonActionView.set("disabled", false);
+            });
+
+            this._set('isNewContent', true);
+            content.save({
+                api: capi,
+                languageCode: service.get('languageCode'),
+                contentType: service.get('contentType'),
+                parentLocation: event.selection.location,
+                fields: e.fields,
+            }, Y.bind(function (error, response) {
+                if ( error ) {
+                    this._parseServerFieldsErrors(response, this._serverSideErrorCallback);
+                    this._notifyError(content.get('id'));
+                    service.get('app').set('loading', false);
+                    return;
+                }
+                version.setAttrs(version.parse({document: response.document.Content.CurrentVersion}));
+                version.publishVersion(options, Y.bind(this._publishDraftCallback, this));
+            }, this));
         },
 
         /**
@@ -163,10 +229,9 @@ YUI.add('ez-publishdraftplugin', function (Y) {
         },
         _createLocationSelect: function () {
             var service = this.get('host');
-
             service.fire('contentDiscover', {
                 config: {
-                    title: 'Select locations for your content',
+                    title: 'Select the locations of your content',
                     contentDiscoveredHandler: Y.bind(this._storeSelection, this),
                     multiple: true,
                     isSelectable: function (contentStruct) {
@@ -174,6 +239,51 @@ YUI.add('ez-publishdraftplugin', function (Y) {
                     },
                 },
             });
+        },
+
+        _findAutoLocation: function () {
+            var service = this.get('host'),
+                that = this,
+                locationStr,
+                parentLocation;
+
+            if (service.get('parentLocation')) {
+
+                this.get('host').get('capi').getContentService().loadLocations(service.get('parentLocation').get('contentInfo').get('id'), function(error, response){
+                    that._storeAutoLocationList(response);
+                });
+            } else {
+                locationStr = service.get('location').get('id').split('/');
+                locationStr.pop();
+                parentLocation = locationStr.join('/');
+                this.get('host').get('capi').getContentService().loadLocation(parentLocation, function(error, response) {
+                    that.get('host').get('capi').getContentService().loadLocations(response.document.Location.ContentInfo._href, function(error, response){
+                        that._storeAutoLocationList(response);
+                    });
+                });
+            }
+        },
+
+        _storeAutoLocationList: function (response) {
+            var service = this.get('host'),
+                content = service.get('content'),
+                app = service.get('app'),
+                that = this;
+
+            that.set('autoLocationList', response.document.LocationList);
+            app.set('loading', true);
+            this.get('buttonActionView').set("disabled", true);
+
+            app.onceAfter('loadingChange', function () {
+                that.get('buttonActionView').set("disabled", false);
+            });
+            if ( content.isNew() ) {
+                this._set('isNewContent', true);
+                this._createPublishContent(that.get('fields'));
+            } else {
+                this._savePublishVersion(that.get('fields'));
+            }
+
         },
 
         _storeSelection: function (e) {
@@ -195,6 +305,7 @@ YUI.add('ez-publishdraftplugin', function (Y) {
             } else {
                 this._savePublishVersion(that.get('fields'));
             }
+
         },
         /**
          * Creates new location as a descendant of selected location
@@ -241,6 +352,7 @@ YUI.add('ez-publishdraftplugin', function (Y) {
 
                         locationsCreatedCounter++;
                     });
+
                 content.addLocation({api: capi}, parentLocation, end);
             });
 
@@ -274,6 +386,81 @@ YUI.add('ez-publishdraftplugin', function (Y) {
             });
             this.set('selection', null);
         },
+
+        _createAutoLocation: function () {
+            var service = this.get('host'),
+                capi = service.get('capi'),
+                content = service.get('content'),
+                contentService = capi.getContentService(),
+                locationsCreatedCounter = 0,
+                notificationIdentifier = 'create-location-' + content.get('id'),
+
+                stack = new Y.Parallel(),
+                that = this;
+
+            this._notify(
+                Y.eZ.trans('creating.new.location.for', {name: content.get('name')}, 'bar'),
+                notificationIdentifier,
+                'started',
+                5
+            );
+
+            Y.Array.each(this.get('autoLocationList').Location, function (selection) {
+                var parentLocation = selection,
+                    locationCreateStruct,
+
+                    errNotificationIdentifier = 'create-location-' + content.get('id'),
+                    end = stack.add(function (error) {
+                        if (error) {
+                            that._notify(
+                                Y.eZ.trans(
+                                    'failed.creating.new.location.for',
+                                    {name: content.get('name'), parentName:''},
+                                    'bar'
+                                ),
+                                errNotificationIdentifier,
+                                'error',
+                                0
+                            );
+                            return;
+                        }
+                        locationsCreatedCounter++;
+                    });
+                    locationCreateStruct = contentService.newLocationCreateStruct(selection._href);
+                    contentService.createLocation(content.get('id'), locationCreateStruct, function() {});
+            });
+
+            stack.done(function () {
+                if (locationsCreatedCounter > 0) {
+                    var msg = Y.eZ.trans('location.created', {name: content.get('name')}, 'bar');
+
+                    if (locationsCreatedCounter > 1) {
+                        msg = Y.eZ.trans(
+                            'locations.created',
+                            {count: locationsCreatedCounter, name: content.get('name')},
+                            'bar'
+                        );
+                    }
+                    that._notify(
+                        msg,
+                        notificationIdentifier,
+                        'done',
+                        5
+                    );
+
+                } else {
+                    that._notify(
+                        Y.eZ.trans('creating.new.location.for.failed', {name: content.get('name')}, 'bar'),
+                        notificationIdentifier,
+                        'error',
+                        0
+                    );
+                }
+
+            });
+            this.set('autoLocationList', null);
+        },
+
         /**
          * Creates a draft of a new content with the given fields and directly
          * tries to publish it.
@@ -308,7 +495,9 @@ YUI.add('ez-publishdraftplugin', function (Y) {
                 version.publishVersion(options, function(){
                     if (that.get('selection')) {
                         that._createLocation();
-                        }
+                    } else if (that.get('autoLocationList')){
+                        that._createAutoLocation();
+                    }
                     that._publishDraftCallback()
                     });
             }, this));
@@ -336,11 +525,14 @@ YUI.add('ez-publishdraftplugin', function (Y) {
                 contentId: content.get('id'),
                 languageCode: service.get('languageCode'),
                 publish: true,
-            }, function () {
-                    if (that.get('selection')) {
-                        that._createLocation();
-                    }
-                    that._publishDraftCallback();
+            }, function(){
+                if (that.get('selection')) {
+                    that._createLocation();
+
+                } else if (that.get('autoLocationList')){
+                    that._createAutoLocation();
+                }
+                that._publishDraftCallback();
                 });
         },
 
