@@ -475,7 +475,12 @@ YUI.add('ez-locationviewviewservice', function (Y) {
                 location = this.get('location'), content = this.get('content'),
                 type = this.get('contentType');
 
-            location.set('id', request.params.id);
+            if (localStorage.getItem('locationId')) {
+                location.set('id', localStorage.getItem('locationId'))
+                localStorage.removeItem('locationId');
+            } else {
+                location.set('id', request.params.id);
+            }
             location.load(loadOptions, function (error) {
                 var tasks, endLoadPath, endMainContentLoad,
                     loadContentOptions = Y.merge(loadOptions);
