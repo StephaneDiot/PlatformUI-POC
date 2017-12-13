@@ -449,6 +449,19 @@ YUI.add('ez-contenteditviewservice', function (Y) {
             if ( attrRedirectionUrl ) {
                 return this.get('app').navigate(attrRedirectionUrl);
             }
+            if (localStorage.getItem('id') && localStorage.getItem('languageCode')) {
+                var doRedirectToViewLocation = Y.bind(function () {
+                    this.get('app').navigateTo('viewLocation', {
+                        id: localStorage.getItem('id'),
+                        languageCode: localStorage.getItem('languageCode'),
+                    });
+                }, this);
+                
+                doRedirectToViewLocation();
+                localStorage.removeItem('id');
+                localStorage.removeItem('languageCode');
+                return;
+            }
             if ( this.get('content').get('resources').MainLocation ) {
                 this._navigateToViewLocation();
             } else {
@@ -537,6 +550,7 @@ YUI.add('ez-contenteditviewservice', function (Y) {
             var app = this.get('app'),
                 service = this;
 
+            localStorage.setItem('languageCode', e.selectedLanguageCode)
             app.navigateTo('editContent', {
                 id: service.get('content').get('id'),
                 languageCode: e.selectedLanguageCode

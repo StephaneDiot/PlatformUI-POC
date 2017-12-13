@@ -480,6 +480,8 @@ YUI.add('ez-locationviewviewservice', function (Y) {
                 localStorage.removeItem('locationId');
             } else {
                 location.set('id', request.params.id);
+                localStorage.setItem('languageCode', service.get('languageCode'));
+                localStorage.setItem('id', request.params.id);
             }
             location.load(loadOptions, function (error) {
                 var tasks, endLoadPath, endMainContentLoad,
