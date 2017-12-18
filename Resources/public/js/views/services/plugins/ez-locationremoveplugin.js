@@ -26,6 +26,7 @@ YUI.add('ez-locationremoveplugin', function (Y) {
 
         initializer: function () {
             this.onHostEvent('*:removeLocations', this._removeLocationsConfirm);
+            this.onHostEvent('*:moveLocations', this._moveLocationsChoose);
         },
 
         /**
@@ -48,6 +49,100 @@ YUI.add('ez-locationremoveplugin', function (Y) {
                     cancelHandler: Y.bind(e.afterRemoveLocationsCallback, this, false)
                 }
             });
+        },
+
+        _moveLocationsChoose: function (e) {
+            var service = this.get('host');
+
+            service.fire('contentDiscover', {
+                config: {
+                    title: 'Select where you want to move your location',
+                    contentDiscoveredHandler: Y.bind(function (eventFacade) {
+                        this._moveLocation(e.locations, e.aftermoveLocationsCallback, eventFacade.selection.location);
+                    }, this),
+                    multiple: false,
+                    isSelectable: function (contentStruct) {
+                        return contentStruct.contentType.get('isContainer');
+                    },
+                },
+            });
+        },
+
+        _moveLocation: function (prevLoc, callback, newLoc) {
+            var that = this,
+                service = that.get('host'),
+                options = {api: service.get('capi')},
+
+                content = service.get('content'),
+                notificationIdentifier = 'remove-locations-' + content.get('id') + '-' + prevLoc.length,
+                countRemovedLocations = 0,
+                countRemoveLocationsFails = 0,
+                tasks = new Y.Parallel(),
+                redirectToMainLocation = false,
+                locId = service.get('location').get('id'),
+                prevLocId = prevLoc[0].get('id');
+                prevLoc[0].set('invisible', 'false')
+
+
+                service.get('content').addLocation(options, newLoc, function (error, response) {
+                    Y.Array.each(prevLoc, function (location) {
+                        var locationId = location.get('id'),
+                            end = tasks.add(function (error, response) {
+                                if (error) {
+                                    countRemoveLocationsFails++;
+                                    return;
+                                }
+
+                                if (locId === prevLocId) {
+
+                                    redirectToMainLocation = true;
+                                }
+                                countRemovedLocations++;
+                            });
+
+                        location.destroy({remove: true, api: service.get('capi')}, end);
+                    });
+
+                    tasks.done(function () {
+                        var errorNotificationIdentifier, successNotificationIdentifier,
+                            locationsRemoved = (countRemovedLocations > 0);
+
+                        if (countRemovedLocations === prevLoc.length) {
+                            successNotificationIdentifier = notificationIdentifier;
+                            errorNotificationIdentifier = notificationIdentifier + '-error';
+                        } else {
+                            successNotificationIdentifier = notificationIdentifier + '-success';
+                            errorNotificationIdentifier = notificationIdentifier;
+                        }
+
+                        if (countRemovedLocations > 0) {
+                            that._notify(
+                                'One location of ' +  content.get('name') + 'has been moved',
+                                successNotificationIdentifier,
+                                'done',
+                                5
+                            );
+                        }
+
+                        if (countRemoveLocationsFails > 0) {
+                            that._notify(
+                                'Error while moving a location of ' + content.get('name'),
+                                errorNotificationIdentifier,
+                                'error',
+                                0
+                            );
+                        }
+                        if (redirectToMainLocation) {
+                            service.get('app').navigateTo('viewLocation',
+                                {
+                                    id: response.document.Location._href,
+                                    languageCode: content.get('mainLanguageCode')
+                                });
+                        } else {
+                            callback(locationsRemoved);
+                        }
+                    });
+                });
         },
 
         /**

@@ -93,6 +93,12 @@ YUI.add('ez-editactionbarview', function (Y) {
                                 label: 'Publish and autolocate',
                                 priority: 182,
                             }),
+                            new Y.eZ.ButtonActionView({
+                                actionId: "autolocatereview",
+                                disabled: false,
+                                label: 'Publish with region validation',
+                                priority: 183,
+                            }),
                         ];
 
                     if ( !this.get('contentType').hasFieldType('ezuser') ) {

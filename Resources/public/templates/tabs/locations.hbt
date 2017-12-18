@@ -84,6 +84,7 @@
         {{/if}}
 
         <div class="ez-locations-tools">
+            <button class="ez-move-locations-button ez-button pure-button">Publish in region</button> or 
             <button class="ez-remove-locations-button ez-button pure-button">{{ translate 'locationview.locations.remove.selected' 'locationview' }}</button>
             or <button class="ez-add-location-button ez-button pure-button">{{ translate 'locationview.locations.add.location' 'locationview' }}</button>
         </div>

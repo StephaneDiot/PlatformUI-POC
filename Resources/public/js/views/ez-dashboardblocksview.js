@@ -161,6 +161,16 @@ YUI.add('ez-dashboardblocksview', function (Y) {
                             bubbleTargets: this,
                             rootLocation: this.get('rootLocation'),
                         }),
+                        new Y.eZ.DashboardBlockLoireReviewView({
+                            priority: 1600,
+                            bubbleTargets: this,
+                            rootLocation: this.get('rootLocation'),
+                        }),
+                        new Y.eZ.DashboardBlockRhoneReviewView({
+                            priority: 1500,
+                            bubbleTargets: this,
+                            rootLocation: this.get('rootLocation'),
+                        }),
                     ];
                 },
                 readOnly: true

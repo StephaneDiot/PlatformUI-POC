@@ -1,0 +1,44 @@
+<h2 class="ez-block-title">Contenus à review pour la région Loire-Centre</h2>
+<div class="ez-block-wrapper ez-asynchronousview ez-font-icon">
+    {{#if loadingError}}
+    <p class="ez-asynchronousview-error ez-font-icon">
+        {{ translate 'dashboard.loading.error' 'dashboardblocks' }}
+        <button class="ez-asynchronousview-retry ez-button ez-font-icon pure-button">{{ translate 'dashboard.retry' 'dashboardblocks' }}</button>
+    </p>
+    {{else}}
+    <table class="ez-block-items-table">
+        <thead class="ez-block-header">
+            <tr>
+                <th class="ez-block-head-title">{{ translate 'dashboard.title' 'dashboardblocks' }}</th>
+                <th class="ez-block-head-content-type">{{ translate 'dashboard.content.type' 'dashboardblocks' }}</th>
+                <th class="ez-block-head-version">{{ translate 'dashboard.version' 'dashboardblocks' }}</th>
+                <th class="ez-block-head-modified">{{ translate 'dashboard.last.saved' 'dashboardblocks' }}</th>
+            </tr>
+        </thead>
+        <tbody class="ez-block-content">
+        {{#each items}}
+            <tr class="ez-block-row">
+                <td class="ez-block-cell ez-dashboard-content-name"
+                    title="{{ contentInfo.name }}">
+                    {{ contentInfo.name }}
+                </td>
+                <td class="ez-block-cell">{{ translate_property contentType.names }}</td>
+                <td class="ez-block-cell">{{ contentInfo.currentVersionNo }}</td>
+                <td class="ez-block-cell ez-block-cell-options">
+                    {{ formatTime contentInfo.lastModificationDate day="numeric" month="short" year="numeric" hour="2-digit" minute="2-digit" }}
+                    <div class="ez-block-row-options">
+                        <a  class="ez-block-option-edit ez-font-icon ez-edit-content-button"
+                            href="{{ path "editContent" id=contentInfo.id languageCode=contentInfo.mainLanguageCode }}"
+                            data-content-id="{{contentInfo.id}}"
+                        ></a>
+                        <a  class="ez-block-option-view ez-font-icon"
+                            href="{{ path "viewLocation" id=location.id languageCode=contentInfo.mainLanguageCode }}">
+                        </a>
+                    </div>
+                </td>
+            </tr>
+        {{/each}}
+        </tbody>
+    </table>
+    {{/if}}
+</div>

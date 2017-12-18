@@ -24,6 +24,9 @@ YUI.add('ez-locationviewlocationstabview', function (Y) {
             '.ez-remove-locations-button': {
                 'tap': '_removeSelectedLocations'
             },
+            '.ez-move-locations-button': {
+                'tap': '_moveSelectedLocation'
+            },
             '.ez-locations-swap-button': {
                 'tap': '_swapLocation'
             }
@@ -243,6 +246,43 @@ YUI.add('ez-locationviewlocationstabview', function (Y) {
                     locations: locations,
                     afterRemoveLocationsCallback: Y.bind(this._afterRemoveLocationCallback, this)
                 });
+            }
+        },
+
+        _moveSelectedLocation: function (e) {
+            var c = this.get('container'),
+                locations = [];
+
+            locations = Y.Array.reject(this.get('locations'), function (location) {
+                var checkbox = c.one('.ez-location-checkbox[data-location-id="' + location.get('id') + '"]');
+
+                if (checkbox && checkbox.get('checked')) {
+                    return false;
+                }
+                return true;
+            });
+
+            if (locations.length == 1) {
+                this._disableLocationsCheckboxes();
+                this.fire('moveLocations', {
+                    locations: locations,
+                    aftermoveLocationsCallback: Y.bind(this._aftermoveLocationCallback, this)
+                });
+            }
+        },
+
+        /**
+         * Callback function called after removing location(s).
+         *
+         * @method _afterRemoveLocationCallback
+         * @protected
+         * @param {Boolean} locationsRemoved if TRUE the view is reloaded, if FALSE it just enables checkboxes
+         */
+        _aftermoveLocationCallback: function (locationsRemoved) {
+            if (locationsRemoved) {
+                this._refresh();
+            } else {
+                this._enableLocationsCheckboxes();
             }
         },
 

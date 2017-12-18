@@ -456,7 +456,7 @@ YUI.add('ez-contenteditviewservice', function (Y) {
                         languageCode: localStorage.getItem('languageCode'),
                     });
                 }, this);
-                
+
                 doRedirectToViewLocation();
                 localStorage.removeItem('id');
                 localStorage.removeItem('languageCode');
