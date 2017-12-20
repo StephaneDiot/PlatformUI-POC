@@ -58,7 +58,6 @@ YUI.add('ez-discoverybarviewservice', function (Y) {
                     multiple: false,
                     contentDiscoveredHandler: Y.bind(this._navigateToLocation, this),
                     startingLocationId: startingLocationId,
-                    minDiscoverDepth: rootDepth,
                     confirmLabel: Y.eZ.trans('view.content.label', {}, 'bar'),
                     isSelectable: function (contentStruct) {
                         return startingLocationId !== contentStruct.location.get('id');
